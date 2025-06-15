@@ -9,46 +9,24 @@ function ApiTester() {
   const [loading, setLoading] = createSignal(false)
   const [error, setError] = createSignal('')
   const [curlInput, setCurlInput] = createSignal('')
-  
-  // Security bypass options
-  const [bypassCors, setBypassCors] = createSignal(false)
-  const [disableSslVerification, setDisableSslVerification] = createSignal(false)
-  const [followRedirects, setFollowRedirects] = createSignal(true)
-  const [timeout, setTimeout] = createSignal(30000)
-  const [userAgent, setUserAgent] = createSignal('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36')
-  const [proxyUrl, setProxyUrl] = createSignal('')
-  
-  // Authentication options
-  const [authType, setAuthType] = createSignal('none')
-  const [authUsername, setAuthUsername] = createSignal('')
-  const [authPassword, setAuthPassword] = createSignal('')
-  const [bearerToken, setBearerToken] = createSignal('')
-  const [apiKey, setApiKey] = createSignal('')
-  const [apiKeyHeader, setApiKeyHeader] = createSignal('X-API-Key')
 
-  const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT']
-  const authTypes = ['none', 'basic', 'bearer', 'api-key', 'digest', 'oauth1', 'oauth2']
-
-  const commonUserAgents = [
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-    'PostmanRuntime/7.32.3',
-    'curl/7.68.0',
-    'Googlebot/2.1',
-    'facebookexternalhit/1.1'
-  ]
+  const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 
   const parseCurl = (curlCommand) => {
     try {
+      // Clean up the curl command
       let curl = curlCommand.trim()
+      
+      // Remove 'curl' from the beginning if present
       curl = curl.replace(/^curl\s+/i, '')
       
+      // Initialize parsed data
       let parsedUrl = ''
       let parsedMethod = 'GET'
       let parsedHeaders = {}
       let parsedBody = ''
       
+      // Split by spaces but preserve quoted strings
       const args = []
       let current = ''
       let inQuotes = false
@@ -78,15 +56,18 @@ function ApiTester() {
         args.push(current.trim())
       }
       
+      // Parse arguments
       for (let i = 0; i < args.length; i++) {
         const arg = args[i]
         
+        // Method
         if (arg === '-X' || arg === '--request') {
           if (i + 1 < args.length) {
             parsedMethod = args[i + 1].toUpperCase()
             i++
           }
         }
+        // Headers
         else if (arg === '-H' || arg === '--header') {
           if (i + 1 < args.length) {
             const header = args[i + 1].replace(/^["']|["']$/g, '')
@@ -97,6 +78,7 @@ function ApiTester() {
             i++
           }
         }
+        // Data/Body
         else if (arg === '-d' || arg === '--data' || arg === '--data-raw') {
           if (i + 1 < args.length) {
             parsedBody = args[i + 1].replace(/^["']|["']$/g, '')
@@ -106,23 +88,13 @@ function ApiTester() {
             i++
           }
         }
-        else if (arg === '-k' || arg === '--insecure') {
-          setDisableSslVerification(true)
-        }
-        else if (arg === '-L' || arg === '--location') {
-          setFollowRedirects(true)
-        }
-        else if (arg === '-A' || arg === '--user-agent') {
-          if (i + 1 < args.length) {
-            setUserAgent(args[i + 1].replace(/^["']|["']$/g, ''))
-            i++
-          }
-        }
+        // URL (usually the last argument or first argument without flags)
         else if (!arg.startsWith('-') && !parsedUrl) {
           parsedUrl = arg.replace(/^["']|["']$/g, '')
         }
       }
       
+      // Apply parsed values
       if (parsedUrl) setUrl(parsedUrl)
       if (parsedMethod) setMethod(parsedMethod)
       if (Object.keys(parsedHeaders).length > 0) {
@@ -142,6 +114,7 @@ function ApiTester() {
     const pastedText = e.target.value
     setCurlInput(pastedText)
     
+    // Auto-detect if it's a cURL command
     if (pastedText.trim().toLowerCase().startsWith('curl ') || 
         pastedText.includes('-X ') || 
         pastedText.includes('--request') ||
@@ -149,73 +122,9 @@ function ApiTester() {
         pastedText.includes('--header')) {
       parseCurl(pastedText)
     } else if (pastedText.trim().startsWith('http')) {
+      // If it's just a URL, set it directly
       setUrl(pastedText.trim())
     }
-  }
-
-  const buildAuthHeaders = () => {
-    const authHeaders = {}
-    
-    switch (authType()) {
-      case 'basic':
-        if (authUsername() && authPassword()) {
-          const credentials = btoa(`${authUsername()}:${authPassword()}`)
-          authHeaders['Authorization'] = `Basic ${credentials}`
-        }
-        break
-      case 'bearer':
-        if (bearerToken()) {
-          authHeaders['Authorization'] = `Bearer ${bearerToken()}`
-        }
-        break
-      case 'api-key':
-        if (apiKey() && apiKeyHeader()) {
-          authHeaders[apiKeyHeader()] = apiKey()
-        }
-        break
-      case 'digest':
-        // Digest auth would need server challenge, simplified here
-        if (authUsername() && authPassword()) {
-          authHeaders['Authorization'] = `Digest username="${authUsername()}", password="${authPassword()}"`
-        }
-        break
-    }
-    
-    return authHeaders
-  }
-
-  const buildSecurityBypassHeaders = () => {
-    const bypassHeaders = {}
-    
-    // Common security bypass headers
-    if (bypassCors()) {
-      bypassHeaders['Access-Control-Allow-Origin'] = '*'
-      bypassHeaders['Access-Control-Allow-Methods'] = '*'
-      bypassHeaders['Access-Control-Allow-Headers'] = '*'
-      bypassHeaders['Access-Control-Allow-Credentials'] = 'true'
-    }
-    
-    // User agent spoofing
-    if (userAgent()) {
-      bypassHeaders['User-Agent'] = userAgent()
-    }
-    
-    // Common bypass headers
-    bypassHeaders['X-Forwarded-For'] = '127.0.0.1'
-    bypassHeaders['X-Real-IP'] = '127.0.0.1'
-    bypassHeaders['X-Originating-IP'] = '127.0.0.1'
-    bypassHeaders['X-Remote-IP'] = '127.0.0.1'
-    bypassHeaders['X-Remote-Addr'] = '127.0.0.1'
-    bypassHeaders['X-Forwarded-Host'] = 'localhost'
-    bypassHeaders['X-Forwarded-Proto'] = 'https'
-    
-    // WAF bypass headers
-    bypassHeaders['X-Bypass-WAF'] = 'true'
-    bypassHeaders['X-Rewrite-URL'] = '/'
-    bypassHeaders['X-Original-URL'] = '/'
-    bypassHeaders['X-Override-URL'] = '/'
-    
-    return bypassHeaders
   }
 
   const sendRequest = async () => {
@@ -231,12 +140,14 @@ function ApiTester() {
     try {
       const startTime = Date.now()
       
-      // Parse user headers
+      // Parse headers
       let parsedHeaders = {}
       if (headers().trim()) {
         try {
+          // Try to parse as JSON first
           parsedHeaders = JSON.parse(headers())
         } catch {
+          // If not JSON, parse as key:value pairs
           headers().split('\n').forEach(line => {
             const [key, ...valueParts] = line.split(':')
             if (key && valueParts.length > 0) {
@@ -246,30 +157,18 @@ function ApiTester() {
         }
       }
 
-      // Build final headers with auth and security bypass
-      const authHeaders = buildAuthHeaders()
-      const bypassHeaders = buildSecurityBypassHeaders()
-      const finalHeaders = { ...bypassHeaders, ...authHeaders, ...parsedHeaders }
-
       // Prepare request options
       const options = {
         method: method(),
-        headers: finalHeaders,
-        mode: bypassCors() ? 'cors' : 'same-origin',
-        credentials: 'include',
-        redirect: followRedirects() ? 'follow' : 'manual',
+        headers: parsedHeaders,
       }
-
-      // Add timeout using AbortController
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), timeout())
-      options.signal = controller.signal
 
       // Add body for methods that support it
       if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
         options.body = body()
         
-        if (!finalHeaders['Content-Type'] && !finalHeaders['content-type']) {
+        // Set content-type if not already set
+        if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
           try {
             JSON.parse(body())
             options.headers['Content-Type'] = 'application/json'
@@ -279,15 +178,7 @@ function ApiTester() {
         }
       }
 
-      let fetchUrl = url()
-      
-      // Use proxy if specified
-      if (proxyUrl()) {
-        fetchUrl = `${proxyUrl()}/${encodeURIComponent(url())}`
-      }
-
-      const fetchResponse = await fetch(fetchUrl, options)
-      clearTimeout(timeoutId)
+      const fetchResponse = await fetch(url(), options)
       const endTime = Date.now()
       
       // Get response headers
@@ -317,17 +208,11 @@ function ApiTester() {
         headers: responseHeaders,
         body: responseBody,
         time: endTime - startTime,
-        size: new Blob([responseBody]).size,
-        redirected: fetchResponse.redirected,
-        url: fetchResponse.url
+        size: new Blob([responseBody]).size
       })
 
     } catch (err) {
-      if (err.name === 'AbortError') {
-        setError(`Request timed out after ${timeout()}ms`)
-      } else {
-        setError(`Request failed: ${err.message}`)
-      }
+      setError(`Request failed: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -346,39 +231,22 @@ function ApiTester() {
   const copyAsCurl = async () => {
     let curl = `curl -X ${method()} "${url()}"`
     
-    // Add security bypass flags
-    if (disableSslVerification()) {
-      curl += ' \\\n  --insecure'
-    }
-    
-    if (followRedirects()) {
-      curl += ' \\\n  --location'
-    }
-    
-    if (userAgent()) {
-      curl += ` \\\n  --user-agent "${userAgent()}"`
-    }
-    
     // Add headers
-    const allHeaders = { ...buildSecurityBypassHeaders(), ...buildAuthHeaders() }
-    
     if (headers().trim()) {
       try {
         const parsedHeaders = JSON.parse(headers())
-        Object.assign(allHeaders, parsedHeaders)
+        Object.entries(parsedHeaders).forEach(([key, value]) => {
+          curl += ` \\\n  -H "${key}: ${value}"`
+        })
       } catch {
         headers().split('\n').forEach(line => {
           const [key, ...valueParts] = line.split(':')
           if (key && valueParts.length > 0) {
-            allHeaders[key.trim()] = valueParts.join(':').trim()
+            curl += ` \\\n  -H "${key.trim()}: ${valueParts.join(':').trim()}"`
           }
         })
       }
     }
-    
-    Object.entries(allHeaders).forEach(([key, value]) => {
-      curl += ` \\\n  -H "${key}: ${value}"`
-    })
     
     // Add body
     if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
@@ -399,10 +267,6 @@ function ApiTester() {
     setResponse(null)
     setError('')
     setCurlInput('')
-    setAuthUsername('')
-    setAuthPassword('')
-    setBearerToken('')
-    setApiKey('')
   }
 
   const loadExample = () => {
@@ -429,166 +293,8 @@ function ApiTester() {
 
   return (
     <div class="card">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🚀 Advanced API Tester</h2>
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🚀 API Tester</h2>
       
-      {/* Security Bypass Options */}
-      <div class="form-group">
-        <label class="form-label">🛡️ Security Bypass Options</label>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              checked={bypassCors()}
-              onChange={(e) => setBypassCors(e.target.checked)}
-              class="mr-3 w-4 h-4"
-            />
-            <span class="text-sm text-red-800 dark:text-red-300">Bypass CORS</span>
-          </label>
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              checked={disableSslVerification()}
-              onChange={(e) => setDisableSslVerification(e.target.checked)}
-              class="mr-3 w-4 h-4"
-            />
-            <span class="text-sm text-red-800 dark:text-red-300">Disable SSL Verification</span>
-          </label>
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              checked={followRedirects()}
-              onChange={(e) => setFollowRedirects(e.target.checked)}
-              class="mr-3 w-4 h-4"
-            />
-            <span class="text-sm text-red-800 dark:text-red-300">Follow Redirects</span>
-          </label>
-        </div>
-        <div class="form-description text-red-600 dark:text-red-400">
-          ⚠️ These options bypass security measures. Use responsibly and only for authorized testing.
-        </div>
-      </div>
-
-      {/* Authentication */}
-      <div class="form-group">
-        <label class="form-label">🔐 Authentication</label>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Auth Type</label>
-            <select
-              value={authType()}
-              onChange={(e) => setAuthType(e.target.value)}
-              class="input-field"
-            >
-              {authTypes.map(type => (
-                <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-              ))}
-            </select>
-          </div>
-          
-          {authType() === 'basic' && (
-            <>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Username</label>
-                <input
-                  type="text"
-                  value={authUsername()}
-                  onInput={(e) => setAuthUsername(e.target.value)}
-                  placeholder="username"
-                  class="input-field"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Password</label>
-                <input
-                  type="password"
-                  value={authPassword()}
-                  onInput={(e) => setAuthPassword(e.target.value)}
-                  placeholder="password"
-                  class="input-field"
-                />
-              </div>
-            </>
-          )}
-          
-          {authType() === 'bearer' && (
-            <div>
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bearer Token</label>
-              <input
-                type="text"
-                value={bearerToken()}
-                onInput={(e) => setBearerToken(e.target.value)}
-                placeholder="your-bearer-token"
-                class="input-field"
-              />
-            </div>
-          )}
-          
-          {authType() === 'api-key' && (
-            <>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">API Key Header</label>
-                <input
-                  type="text"
-                  value={apiKeyHeader()}
-                  onInput={(e) => setApiKeyHeader(e.target.value)}
-                  placeholder="X-API-Key"
-                  class="input-field"
-                />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">API Key</label>
-                <input
-                  type="text"
-                  value={apiKey()}
-                  onInput={(e) => setApiKey(e.target.value)}
-                  placeholder="your-api-key"
-                  class="input-field"
-                />
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Advanced Options */}
-      <div class="form-group">
-        <label class="form-label">⚙️ Advanced Options</label>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">User Agent</label>
-            <select
-              value={userAgent()}
-              onChange={(e) => setUserAgent(e.target.value)}
-              class="input-field"
-            >
-              {commonUserAgents.map(ua => (
-                <option key={ua} value={ua}>{ua.substring(0, 50)}...</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Timeout (ms)</label>
-            <input
-              type="number"
-              value={timeout()}
-              onInput={(e) => setTimeout(parseInt(e.target.value))}
-              placeholder="30000"
-              class="input-field"
-            />
-          </div>
-          <div class="md:col-span-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Proxy URL (optional)</label>
-            <input
-              type="url"
-              value={proxyUrl()}
-              onInput={(e) => setProxyUrl(e.target.value)}
-              placeholder="https://cors-anywhere.herokuapp.com"
-              class="input-field"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* cURL Input Section */}
       <div class="form-group">
         <div class="flex items-center justify-between mb-3">
@@ -607,8 +313,7 @@ function ApiTester() {
 curl -X POST "https://api.example.com/users" \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer token123" \\
-  -d '{"name": "John", "email": "john@example.com"}' \\
-  --insecure --location
+  -d '{"name": "John", "email": "john@example.com"}'
 
 Or just paste a URL:
 https://api.example.com/users`}
@@ -616,7 +321,7 @@ https://api.example.com/users`}
           class="textarea-enhanced font-mono"
         />
         <div class="form-description">
-          🎯 Supports cURL commands with security flags (-k, -L, -A). Auto-detects and fills all options.
+          🎯 Supports cURL commands with -X, -H, -d flags. Auto-detects and fills URL, method, headers, and body.
         </div>
       </div>
 
@@ -646,20 +351,21 @@ https://api.example.com/users`}
       {/* Headers */}
       <div class="form-group">
         <label class="form-label">
-          📋 Custom Headers (JSON format)
+          📋 Headers (JSON format)
         </label>
         <textarea
           value={headers()}
           onInput={(e) => setHeaders(e.target.value)}
           placeholder={`{
   "Content-Type": "application/json",
-  "X-Custom-Header": "custom-value"
+  "Authorization": "Bearer your-token-here",
+  "X-API-Key": "your-api-key"
 }`}
           rows="4"
           class="textarea-enhanced font-mono"
         />
         <div class="form-description">
-          💡 Auth and security bypass headers will be automatically added
+          💡 Headers will be auto-filled when you paste a cURL command above
         </div>
       </div>
 
@@ -680,6 +386,9 @@ https://api.example.com/users`}
             rows="6"
             class="textarea-enhanced font-mono"
           />
+          <div class="form-description">
+            🔧 Request body will be auto-filled from cURL -d flag
+          </div>
         </div>
       )}
 
@@ -722,24 +431,11 @@ https://api.example.com/users`}
               <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                 📊 {response().size} bytes
               </span>
-              {response().redirected && (
-                <span class="text-sm text-blue-600 dark:text-blue-400 flex items-center">
-                  🔄 Redirected
-                </span>
-              )}
             </div>
             <button onClick={copyResponse} class="copy-btn">
               📋 Copy Response
             </button>
           </div>
-
-          {/* Final URL if redirected */}
-          {response().redirected && (
-            <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-              <span class="text-sm font-medium text-blue-800 dark:text-blue-300">Final URL:</span>
-              <div class="font-mono text-sm text-blue-900 dark:text-blue-200 mt-1">{response().url}</div>
-            </div>
-          )}
 
           {/* Response Headers */}
           <div>
