@@ -137,37 +137,17 @@ function App() {
               </div>
             </div>
 
-            {/* Right side controls */}
-            <div class="flex items-center space-x-3">
-              {/* Event Loop Quick Access */}
-              <button
-                onClick={() => handleTabChange('eventloop')}
-                class={`flex items-center space-x-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-300 transform hover:scale-105 ${
-                  activeTab() === 'eventloop'
-                    ? isDarkMode()
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg'
-                    : isDarkMode()
-                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-                }`}
-              >
-                <span class="text-base">⚡</span>
-                <span class="hidden sm:inline">JS Event Loop</span>
-              </button>
-
-              {/* Dark Mode Toggle */}
-              <button
-                onClick={toggleDarkMode}
-                class={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                  isDarkMode() 
-                    ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {isDarkMode() ? '☀️' : '🌙'}
-              </button>
-            </div>
+            {/* Dark Mode Toggle */}
+            <button
+              onClick={toggleDarkMode}
+              class={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                isDarkMode() 
+                  ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {isDarkMode() ? '☀️' : '🌙'}
+            </button>
           </div>
         </div>
       </header>
