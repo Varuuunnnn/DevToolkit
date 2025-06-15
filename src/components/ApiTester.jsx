@@ -9,55 +9,8 @@ function ApiTester() {
   const [loading, setLoading] = createSignal(false)
   const [error, setError] = createSignal('')
   const [curlInput, setCurlInput] = createSignal('')
-  const [bypassCors, setBypassCors] = createSignal(false)
-  const [proxyService, setProxyService] = createSignal('allorigins')
 
   const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
-
-  const proxyServices = [
-    {
-      id: 'allorigins',
-      name: 'AllOrigins (Recommended)',
-      description: 'Free CORS proxy service',
-      baseUrl: 'https://api.allorigins.win/raw?url=',
-      supportsHeaders: false,
-      supportsBody: false
-    },
-    {
-      id: 'corsproxy',
-      name: 'CORS Proxy',
-      description: 'Simple CORS proxy',
-      baseUrl: 'https://corsproxy.io/?',
-      supportsHeaders: true,
-      supportsBody: true
-    },
-    {
-      id: 'corsanywhere',
-      name: 'CORS Anywhere',
-      description: 'Popular CORS proxy (may have rate limits)',
-      baseUrl: 'https://cors-anywhere.herokuapp.com/',
-      supportsHeaders: true,
-      supportsBody: true
-    }
-  ]
-
-  const getProxyUrl = (originalUrl) => {
-    if (!bypassCors()) return originalUrl
-    
-    const proxy = proxyServices.find(p => p.id === proxyService())
-    if (!proxy) return originalUrl
-
-    switch (proxy.id) {
-      case 'allorigins':
-        return `${proxy.baseUrl}${encodeURIComponent(originalUrl)}`
-      case 'corsproxy':
-        return `${proxy.baseUrl}${encodeURIComponent(originalUrl)}`
-      case 'corsanywhere':
-        return `${proxy.baseUrl}${originalUrl}`
-      default:
-        return originalUrl
-    }
-  }
 
   const parseCurl = (curlCommand) => {
     try {
@@ -187,10 +140,6 @@ function ApiTester() {
     try {
       const startTime = Date.now()
       
-      // Get the final URL (with proxy if enabled)
-      const finalUrl = getProxyUrl(url().trim())
-      const isUsingProxy = bypassCors() && finalUrl !== url().trim()
-      
       // Parse headers
       let parsedHeaders = {}
       if (headers().trim()) {
@@ -214,56 +163,22 @@ function ApiTester() {
         headers: parsedHeaders,
       }
 
-      // For some proxy services, we need to modify the request
-      const currentProxy = proxyServices.find(p => p.id === proxyService())
-      
-      if (isUsingProxy && currentProxy) {
-        // Some proxies don't support custom headers or methods
-        if (!currentProxy.supportsHeaders) {
-          options.headers = {}
-        }
+      // Add body for methods that support it
+      if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
+        options.body = body()
         
-        if (!currentProxy.supportsBody) {
-          // For GET requests through simple proxies, we can't send body
-          if (method() !== 'GET') {
-            setError(`${currentProxy.name} doesn't support ${method()} requests with body. Try a different proxy service.`)
-            setLoading(false)
-            return
-          }
-        } else {
-          // Add body for methods that support it
-          if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
-            options.body = body()
-            
-            // Set content-type if not already set
-            if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
-              try {
-                JSON.parse(body())
-                options.headers['Content-Type'] = 'application/json'
-              } catch {
-                options.headers['Content-Type'] = 'text/plain'
-              }
-            }
-          }
-        }
-      } else {
-        // Normal request without proxy
-        if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
-          options.body = body()
-          
-          // Set content-type if not already set
-          if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
-            try {
-              JSON.parse(body())
-              options.headers['Content-Type'] = 'application/json'
-            } catch {
-              options.headers['Content-Type'] = 'text/plain'
-            }
+        // Set content-type if not already set
+        if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
+          try {
+            JSON.parse(body())
+            options.headers['Content-Type'] = 'application/json'
+          } catch {
+            options.headers['Content-Type'] = 'text/plain'
           }
         }
       }
 
-      const fetchResponse = await fetch(finalUrl, options)
+      const fetchResponse = await fetch(url(), options)
       const endTime = Date.now()
       
       // Get response headers
@@ -293,22 +208,11 @@ function ApiTester() {
         headers: responseHeaders,
         body: responseBody,
         time: endTime - startTime,
-        size: new Blob([responseBody]).size,
-        usedProxy: isUsingProxy,
-        proxyService: isUsingProxy ? currentProxy.name : null,
-        originalUrl: url().trim(),
-        finalUrl: finalUrl
+        size: new Blob([responseBody]).size
       })
 
     } catch (err) {
-      let errorMessage = `Request failed: ${err.message}`
-      
-      // Provide helpful error messages for common CORS issues
-      if (err.message.includes('CORS') || err.message.includes('cross-origin')) {
-        errorMessage += '\n\n💡 Try enabling "Bypass CORS" option below to use a proxy service.'
-      }
-      
-      setError(errorMessage)
+      setError(`Request failed: ${err.message}`)
     } finally {
       setLoading(false)
     }
@@ -387,67 +291,10 @@ function ApiTester() {
     return 'text-gray-600 dark:text-gray-400'
   }
 
-  const currentProxyInfo = () => {
-    return proxyServices.find(p => p.id === proxyService())
-  }
-
   return (
     <div class="card">
       <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🚀 API Tester</h2>
       
-      {/* CORS Bypass Section */}
-      <div class="form-group">
-        <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-          <div class="flex items-start justify-between mb-3">
-            <div>
-              <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-1">🛡️ CORS Bypass</h3>
-              <p class="text-sm text-blue-600 dark:text-blue-400">
-                Enable this to bypass CORS restrictions using a proxy service
-              </p>
-            </div>
-            <label class="flex items-center">
-              <input
-                type="checkbox"
-                checked={bypassCors()}
-                onChange={(e) => setBypassCors(e.target.checked)}
-                class="mr-2 w-4 h-4"
-              />
-              <span class="text-sm font-medium text-blue-800 dark:text-blue-300">Enable</span>
-            </label>
-          </div>
-          
-          {bypassCors() && (
-            <div class="space-y-3">
-              <div>
-                <label class="block text-sm font-medium text-blue-700 dark:text-blue-300 mb-2">
-                  Proxy Service:
-                </label>
-                <select
-                  value={proxyService()}
-                  onChange={(e) => setProxyService(e.target.value)}
-                  class="w-full px-3 py-2 border border-blue-300 dark:border-blue-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg text-sm"
-                >
-                  {proxyServices.map(proxy => (
-                    <option key={proxy.id} value={proxy.id}>
-                      {proxy.name} - {proxy.description}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              {currentProxyInfo() && (
-                <div class="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-800/50 p-2 rounded">
-                  <strong>Limitations:</strong>
-                  {!currentProxyInfo().supportsHeaders && ' • Custom headers not supported'}
-                  {!currentProxyInfo().supportsBody && ' • Request body not supported for non-GET requests'}
-                  {currentProxyInfo().supportsHeaders && currentProxyInfo().supportsBody && ' • Full feature support'}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* cURL Input Section */}
       <div class="form-group">
         <div class="flex items-center justify-between mb-3">
@@ -499,13 +346,6 @@ https://api.example.com/users`}
             class="input-field flex-1"
           />
         </div>
-        
-        {/* Show proxy URL preview */}
-        {bypassCors() && url().trim() && (
-          <div class="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded font-mono">
-            <strong>Proxy URL:</strong> {getProxyUrl(url().trim())}
-          </div>
-        )}
       </div>
 
       {/* Headers */}
@@ -526,9 +366,6 @@ https://api.example.com/users`}
         />
         <div class="form-description">
           💡 Headers will be auto-filled when you paste a cURL command above
-          {bypassCors() && !currentProxyInfo()?.supportsHeaders && (
-            <span class="text-orange-600 dark:text-orange-400"> • Note: Current proxy doesn't support custom headers</span>
-          )}
         </div>
       </div>
 
@@ -551,9 +388,6 @@ https://api.example.com/users`}
           />
           <div class="form-description">
             🔧 Request body will be auto-filled from cURL -d flag
-            {bypassCors() && !currentProxyInfo()?.supportsBody && (
-              <span class="text-orange-600 dark:text-orange-400"> • Note: Current proxy doesn't support request body for {method()} requests</span>
-            )}
           </div>
         </div>
       )}
@@ -578,7 +412,7 @@ https://api.example.com/users`}
       {/* Error */}
       {error() && (
         <div class="error-container">
-          <p class="error-text whitespace-pre-line">❌ {error()}</p>
+          <p class="error-text">❌ {error()}</p>
         </div>
       )}
 
@@ -597,28 +431,11 @@ https://api.example.com/users`}
               <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                 📊 {response().size} bytes
               </span>
-              {response().usedProxy && (
-                <span class="text-xs bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-300 px-2 py-1 rounded">
-                  🛡️ Via {response().proxyService}
-                </span>
-              )}
             </div>
             <button onClick={copyResponse} class="copy-btn">
               📋 Copy Response
             </button>
           </div>
-
-          {/* Proxy Info */}
-          {response().usedProxy && (
-            <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-              <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2">🛡️ Proxy Information</h4>
-              <div class="text-xs text-blue-600 dark:text-blue-400 space-y-1">
-                <div><strong>Original URL:</strong> {response().originalUrl}</div>
-                <div><strong>Proxy URL:</strong> {response().finalUrl}</div>
-                <div><strong>Service:</strong> {response().proxyService}</div>
-              </div>
-            </div>
-          )}
 
           {/* Response Headers */}
           <div>

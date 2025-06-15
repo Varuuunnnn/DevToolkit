@@ -1,0 +1,336 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* Dark mode support */
+.dark {
+  color-scheme: dark;
+}
+
+@layer components {
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-8 transition-all duration-300 hover:shadow-xl hover:scale-[1.02] transform;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-medium py-3 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transform hover:scale-105 active:scale-95;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 text-base;
+  }
+  
+  .textarea-field {
+    @apply w-full px-5 py-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 resize-y min-h-[120px] text-base leading-relaxed;
+  }
+
+  .textarea-large {
+    @apply textarea-field min-h-[200px];
+  }
+
+  .textarea-xl {
+    @apply textarea-field min-h-[300px];
+  }
+
+  .textarea-compact {
+    @apply textarea-field min-h-[80px];
+  }
+
+  /* Enhanced textarea with better spacing */
+  .textarea-enhanced {
+    @apply textarea-field;
+    line-height: 1.6;
+    letter-spacing: 0.025em;
+  }
+
+  /* Code/monospace textarea */
+  .textarea-code {
+    @apply textarea-field font-mono text-sm;
+    line-height: 1.5;
+    tab-size: 2;
+  }
+
+  /* Auto-resizing textarea */
+  .textarea-auto {
+    @apply textarea-field;
+    resize: none;
+    overflow: hidden;
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -8px, 0);
+  }
+  70% {
+    transform: translate3d(0, -4px, 0);
+  }
+  90% {
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-gray-800;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 dark:bg-gray-600;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Smooth transitions for dark mode */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Focus styles for accessibility */
+.focus-visible {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800;
+}
+
+/* Loading states */
+.loading {
+  @apply animate-pulse;
+}
+
+/* Hover effects */
+.hover-lift {
+  @apply transition-transform duration-300 hover:scale-105;
+}
+
+.hover-glow {
+  @apply transition-shadow duration-300 hover:shadow-lg hover:shadow-blue-500/25;
+}
+
+/* Glass morphism effect */
+.glass {
+  @apply backdrop-blur-lg bg-white/80 dark:bg-gray-900/80 border border-white/20 dark:border-gray-700/50;
+}
+
+/* Gradient text */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent;
+}
+
+/* Status indicators */
+.status-success {
+  @apply bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border border-green-200 dark:border-green-700;
+}
+
+.status-error {
+  @apply bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-700;
+}
+
+.status-warning {
+  @apply bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-700;
+}
+
+.status-info {
+  @apply bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-700;
+}
+
+/* Enhanced spacing utilities */
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.space-y-8 > * + * {
+  margin-top: 2rem;
+}
+
+/* Better form layouts */
+.form-group {
+  @apply mb-6;
+}
+
+.form-label {
+  @apply block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3;
+}
+
+.form-description {
+  @apply text-xs text-gray-500 dark:text-gray-400 mt-2;
+}
+
+/* Enhanced button groups */
+.btn-group {
+  @apply flex gap-3 flex-wrap;
+}
+
+/* Responsive text areas */
+@media (max-width: 640px) {
+  .textarea-field {
+    @apply px-4 py-3 text-sm;
+  }
+  
+  .card {
+    @apply p-6;
+  }
+}
+
+/* Auto-resize functionality */
+.textarea-auto-resize {
+  field-sizing: content;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Better focus states for textareas */
+.textarea-field:focus {
+  @apply ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-800 border-transparent;
+  box-shadow: 0 0 0 2px rgb(59 130 246 / 0.5);
+}
+
+/* Improved placeholder styling */
+.textarea-field::placeholder {
+  @apply text-gray-400 dark:text-gray-500;
+  font-style: italic;
+}
+
+/* Character count styling */
+.char-count {
+  @apply text-xs text-gray-500 dark:text-gray-400 text-right mt-1;
+}
+
+/* Enhanced result displays */
+.result-container {
+  @apply bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 space-y-3;
+}
+
+.result-item {
+  @apply bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-3;
+}
+
+/* Better code display */
+.code-display {
+  @apply font-mono text-sm bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 overflow-x-auto;
+  line-height: 1.5;
+  tab-size: 2;
+}
+
+/* Enhanced copy buttons */
+.copy-btn {
+  @apply bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-3 py-1 rounded text-xs font-medium transition-all duration-200 hover:scale-105;
+}
+
+/* Better spacing for form elements */
+.form-row {
+  @apply flex gap-4 items-end;
+}
+
+.form-col {
+  @apply flex-1;
+}
+
+/* Enhanced section headers */
+.section-header {
+  @apply text-lg font-semibold text-gray-900 dark:text-white mb-4 pb-2 border-b border-gray-200 dark:border-gray-700;
+}
+
+/* Improved error states */
+.error-container {
+  @apply bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4 mb-4;
+}
+
+.error-text {
+  @apply text-red-800 dark:text-red-300 text-sm;
+}
+
+/* Success states */
+.success-container {
+  @apply bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4 mb-4;
+}
+
+.success-text {
+  @apply text-green-800 dark:text-green-300 text-sm font-medium;
+}
