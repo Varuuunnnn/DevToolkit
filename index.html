@@ -4,10 +4,37 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gzip Decompress and JWT Decrypt SolidJS Application</title>
+    <meta name="description" content="Professional developer utilities toolkit with gzip compression, JWT decoding, password generation, JSON formatting, and more." />
+    <meta name="keywords" content="developer tools, gzip, jwt, json formatter, password generator, api tester" />
+    <meta name="author" content="DevToolkit" />
+    <title>DevToolkit - Professional Developer Utilities</title>
+    
+    <!-- Preconnect to improve performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="DevToolkit - Professional Developer Utilities" />
+    <meta property="og:description" content="Comprehensive toolkit for developers with utilities for compression, encryption, formatting, and testing." />
+    <meta property="og:type" content="website" />
+    
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#3B82F6" />
+    
+    <!-- Prevent FOUC (Flash of Unstyled Content) -->
+    <style>
+      html { visibility: hidden; }
+      html.loaded { visibility: visible; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/index.jsx"></script>
+    <script>
+      // Prevent FOUC
+      document.addEventListener('DOMContentLoaded', function() {
+        document.documentElement.classList.add('loaded');
+      });
+    </script>
   </body>
 </html>

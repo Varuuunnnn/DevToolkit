@@ -1,23 +1,17 @@
-import { createSignal, createEffect } from 'solid-js'
+import { createSignal } from 'solid-js'
 import * as pako from 'pako'
+import { 
+  Card, FormGroup, FormLabel, FormDescription, TextArea, ButtonGroup, Button, 
+  CharCount, ErrorContainer, SuccessContainer, CopyButton 
+} from './shared/FormComponents'
+import { useCharacterCount, useProcessing } from './shared/hooks'
 
 function GzipCompressor() {
   const [operation, setOperation] = createSignal('decompress')
-  const [inputText, setInputText] = createSignal('')
+  const [inputText, setInputText, inputCharCount] = useCharacterCount('')
   const [result, setResult] = createSignal('')
-  const [error, setError] = createSignal('')
-  const [isProcessing, setIsProcessing] = createSignal(false)
-  const [inputCharCount, setInputCharCount] = createSignal(0)
   const [resultCharCount, setResultCharCount] = createSignal(0)
-
-  // Auto-resize textarea and update character count
-  createEffect(() => {
-    setInputCharCount(inputText().length)
-  })
-
-  createEffect(() => {
-    setResultCharCount(result().length)
-  })
+  const { isProcessing, error, setError, withProcessing } = useProcessing()
 
   const handleCompress = async () => {
     if (!inputText().trim()) {
@@ -25,22 +19,12 @@ function GzipCompressor() {
       return
     }
 
-    setIsProcessing(true)
-    setError('')
-    setResult('')
-
-    try {
-      // Compress the text using pako
+    await withProcessing(async () => {
       const compressed = pako.gzip(inputText().trim())
-      
-      // Convert to base64 for display
       const base64 = btoa(String.fromCharCode(...compressed))
       setResult(base64)
-    } catch (err) {
-      setError(`Compression failed: ${err.message}`)
-    } finally {
-      setIsProcessing(false)
-    }
+      setResultCharCount(base64.length)
+    })
   }
 
   const handleDecompress = async () => {
@@ -49,26 +33,16 @@ function GzipCompressor() {
       return
     }
 
-    setIsProcessing(true)
-    setError('')
-    setResult('')
-
-    try {
-      // Convert base64 to Uint8Array
+    await withProcessing(async () => {
       const binaryString = atob(inputText().trim())
       const bytes = new Uint8Array(binaryString.length)
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i)
       }
-
-      // Decompress using pako
       const decompressed = pako.inflate(bytes, { to: 'string' })
       setResult(decompressed)
-    } catch (err) {
-      setError(`Decompression failed: ${err.message}`)
-    } finally {
-      setIsProcessing(false)
-    }
+      setResultCharCount(decompressed.length)
+    })
   }
 
   const handleProcess = () => {
@@ -79,17 +53,10 @@ function GzipCompressor() {
     }
   }
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(result())
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err)
-    }
-  }
-
   const clearAll = () => {
     setInputText('')
     setResult('')
+    setResultCharCount(0)
     setError('')
   }
 
@@ -103,17 +70,10 @@ function GzipCompressor() {
     return null
   }
 
-  const autoResize = (textarea) => {
-    textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 400) + 'px'
-  }
-
   return (
-    <div class="card">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Gzip Compressor/Decompressor</h2>
-      
+    <Card title="🗜️ Gzip Compressor/Decompressor">
       {/* Operation Toggle */}
-      <div class="form-group">
+      <FormGroup>
         <div class="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
           <button
             onClick={() => setOperation('compress')}
@@ -136,109 +96,82 @@ function GzipCompressor() {
             📂 Decompress
           </button>
         </div>
-      </div>
+      </FormGroup>
 
       {/* Input Section */}
-      <div class="form-group">
-        <label class="form-label">
+      <FormGroup>
+        <FormLabel>
           {operation() === 'compress' ? '📝 Text to Compress' : '🔗 Base64 Encoded Gzip Data'}
-        </label>
-        <textarea
-          ref={(el) => {
-            if (el) {
-              el.addEventListener('input', () => autoResize(el))
-              autoResize(el)
-            }
-          }}
+        </FormLabel>
+        <TextArea
           value={inputText()}
-          onInput={(e) => {
-            setInputText(e.target.value)
-            autoResize(e.target)
-          }}
+          onInput={(e) => setInputText(e.target.value)}
           placeholder={
             operation() === 'compress' 
               ? 'Enter your text here to compress...\n\nYou can paste large amounts of text, JSON data, or any content you want to compress.' 
               : 'Paste your base64 encoded gzip data here...\n\nExample: H4sIAAAAAAAAA...'
           }
-          class="textarea-enhanced"
+          enhanced
+          autoResize
         />
-        <div class="char-count">
-          {inputCharCount().toLocaleString()} characters
-        </div>
-        <div class="form-description">
+        <CharCount count={inputCharCount()} />
+        <FormDescription>
           {operation() === 'compress' 
             ? 'Enter any text content to compress it using gzip algorithm'
             : 'Paste base64-encoded gzip data to decompress it back to original text'
           }
-        </div>
-      </div>
+        </FormDescription>
+      </FormGroup>
 
       {/* Controls */}
-      <div class="btn-group">
-        <button
+      <ButtonGroup>
+        <Button
           onClick={handleProcess}
           disabled={isProcessing()}
-          class="btn-primary"
         >
           {isProcessing() 
             ? (operation() === 'compress' ? '🔄 Compressing...' : '🔄 Decompressing...') 
             : (operation() === 'compress' ? '🗜️ Compress Text' : '📂 Decompress Data')
           }
-        </button>
-        <button onClick={clearAll} class="btn-secondary">
+        </Button>
+        <Button variant="secondary" onClick={clearAll}>
           🗑️ Clear All
-        </button>
-      </div>
+        </Button>
+      </ButtonGroup>
 
       {/* Error Display */}
-      {error() && (
-        <div class="error-container">
-          <p class="error-text">❌ {error()}</p>
-        </div>
-      )}
+      {error() && <ErrorContainer message={error()} />}
 
       {/* Compression Stats */}
       {operation() === 'compress' && getCompressionRatio() && (
-        <div class="success-container">
-          <p class="success-text">
-            📊 Compression: {getCompressionRatio()}
-          </p>
-        </div>
+        <SuccessContainer message={`📊 Compression: ${getCompressionRatio()}`} />
       )}
 
       {/* Result Section */}
       {result() && (
-        <div class="form-group">
+        <FormGroup>
           <div class="flex items-center justify-between mb-3">
-            <label class="form-label mb-0">
+            <FormLabel>
               {operation() === 'compress' ? '📦 Compressed Data (Base64)' : '📄 Decompressed Content'}
-            </label>
-            <button onClick={copyToClipboard} class="copy-btn">
-              📋 Copy Result
-            </button>
+            </FormLabel>
+            <CopyButton text={result()} label="Copy Result" />
           </div>
-          <textarea
-            ref={(el) => {
-              if (el) {
-                autoResize(el)
-              }
-            }}
+          <TextArea
             value={result()}
             readonly
-            class="textarea-code bg-gray-50 dark:bg-gray-700"
+            class="bg-gray-50 dark:bg-gray-700"
+            autoResize
           />
-          <div class="char-count">
-            {resultCharCount().toLocaleString()} characters
-          </div>
-          <div class="form-description">
+          <CharCount count={resultCharCount()} />
+          <FormDescription>
             {operation() === 'compress' 
               ? 'Base64 encoded compressed data - copy this to share or store'
               : 'Original decompressed text content'
             }
-          </div>
-        </div>
+          </FormDescription>
+        </FormGroup>
       )}
-    </div>
+    </Card>
   )
 }
 

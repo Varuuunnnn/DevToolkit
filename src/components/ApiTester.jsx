@@ -1,4 +1,9 @@
 import { createSignal } from 'solid-js'
+import { 
+  Card, FormGroup, FormLabel, FormDescription, TextArea, ButtonGroup, Button, 
+  InputField, ErrorContainer, StatusBadge, SectionHeader, ResultContainer, CodeDisplay, CopyButton
+} from './shared/FormComponents'
+import { useProcessing } from './shared/hooks'
 
 function ApiTester() {
   const [url, setUrl] = createSignal('')
@@ -6,27 +11,20 @@ function ApiTester() {
   const [headers, setHeaders] = createSignal('')
   const [body, setBody] = createSignal('')
   const [response, setResponse] = createSignal(null)
-  const [loading, setLoading] = createSignal(false)
-  const [error, setError] = createSignal('')
   const [curlInput, setCurlInput] = createSignal('')
+  const { isProcessing, error, setError, withProcessing } = useProcessing()
 
   const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
 
   const parseCurl = (curlCommand) => {
     try {
-      // Clean up the curl command
-      let curl = curlCommand.trim()
+      let curl = curlCommand.trim().replace(/^curl\s+/i, '')
       
-      // Remove 'curl' from the beginning if present
-      curl = curl.replace(/^curl\s+/i, '')
-      
-      // Initialize parsed data
       let parsedUrl = ''
       let parsedMethod = 'GET'
       let parsedHeaders = {}
       let parsedBody = ''
       
-      // Split by spaces but preserve quoted strings
       const args = []
       let current = ''
       let inQuotes = false
@@ -56,19 +54,15 @@ function ApiTester() {
         args.push(current.trim())
       }
       
-      // Parse arguments
       for (let i = 0; i < args.length; i++) {
         const arg = args[i]
         
-        // Method
         if (arg === '-X' || arg === '--request') {
           if (i + 1 < args.length) {
             parsedMethod = args[i + 1].toUpperCase()
             i++
           }
-        }
-        // Headers
-        else if (arg === '-H' || arg === '--header') {
+        } else if (arg === '-H' || arg === '--header') {
           if (i + 1 < args.length) {
             const header = args[i + 1].replace(/^["']|["']$/g, '')
             const [key, ...valueParts] = header.split(':')
@@ -77,9 +71,7 @@ function ApiTester() {
             }
             i++
           }
-        }
-        // Data/Body
-        else if (arg === '-d' || arg === '--data' || arg === '--data-raw') {
+        } else if (arg === '-d' || arg === '--data' || arg === '--data-raw') {
           if (i + 1 < args.length) {
             parsedBody = args[i + 1].replace(/^["']|["']$/g, '')
             if (parsedMethod === 'GET') {
@@ -87,14 +79,11 @@ function ApiTester() {
             }
             i++
           }
-        }
-        // URL (usually the last argument or first argument without flags)
-        else if (!arg.startsWith('-') && !parsedUrl) {
+        } else if (!arg.startsWith('-') && !parsedUrl) {
           parsedUrl = arg.replace(/^["']|["']$/g, '')
         }
       }
       
-      // Apply parsed values
       if (parsedUrl) setUrl(parsedUrl)
       if (parsedMethod) setMethod(parsedMethod)
       if (Object.keys(parsedHeaders).length > 0) {
@@ -114,7 +103,6 @@ function ApiTester() {
     const pastedText = e.target.value
     setCurlInput(pastedText)
     
-    // Auto-detect if it's a cURL command
     if (pastedText.trim().toLowerCase().startsWith('curl ') || 
         pastedText.includes('-X ') || 
         pastedText.includes('--request') ||
@@ -122,7 +110,6 @@ function ApiTester() {
         pastedText.includes('--header')) {
       parseCurl(pastedText)
     } else if (pastedText.trim().startsWith('http')) {
-      // If it's just a URL, set it directly
       setUrl(pastedText.trim())
     }
   }
@@ -133,21 +120,14 @@ function ApiTester() {
       return
     }
 
-    setLoading(true)
-    setError('')
-    setResponse(null)
-
-    try {
+    await withProcessing(async () => {
       const startTime = Date.now()
       
-      // Parse headers
       let parsedHeaders = {}
       if (headers().trim()) {
         try {
-          // Try to parse as JSON first
           parsedHeaders = JSON.parse(headers())
         } catch {
-          // If not JSON, parse as key:value pairs
           headers().split('\n').forEach(line => {
             const [key, ...valueParts] = line.split(':')
             if (key && valueParts.length > 0) {
@@ -157,17 +137,14 @@ function ApiTester() {
         }
       }
 
-      // Prepare request options
       const options = {
         method: method(),
         headers: parsedHeaders,
       }
 
-      // Add body for methods that support it
       if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
         options.body = body()
         
-        // Set content-type if not already set
         if (!parsedHeaders['Content-Type'] && !parsedHeaders['content-type']) {
           try {
             JSON.parse(body())
@@ -181,13 +158,11 @@ function ApiTester() {
       const fetchResponse = await fetch(url(), options)
       const endTime = Date.now()
       
-      // Get response headers
       const responseHeaders = {}
       fetchResponse.headers.forEach((value, key) => {
         responseHeaders[key] = value
       })
 
-      // Get response body
       let responseBody = ''
       const contentType = fetchResponse.headers.get('content-type') || ''
       
@@ -210,28 +185,12 @@ function ApiTester() {
         time: endTime - startTime,
         size: new Blob([responseBody]).size
       })
-
-    } catch (err) {
-      setError(`Request failed: ${err.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const copyResponse = async () => {
-    if (!response()) return
-    
-    try {
-      await navigator.clipboard.writeText(response().body)
-    } catch (err) {
-      console.error('Failed to copy:', err)
-    }
+    })
   }
 
   const copyAsCurl = async () => {
     let curl = `curl -X ${method()} "${url()}"`
     
-    // Add headers
     if (headers().trim()) {
       try {
         const parsedHeaders = JSON.parse(headers())
@@ -248,7 +207,6 @@ function ApiTester() {
       }
     }
     
-    // Add body
     if (['POST', 'PUT', 'PATCH'].includes(method()) && body().trim()) {
       curl += ` \\\n  -d '${body().replace(/'/g, "\\'")}'`
     }
@@ -283,29 +241,17 @@ function ApiTester() {
     parseCurl(exampleCurl)
   }
 
-  const getStatusColor = (status) => {
-    if (status >= 200 && status < 300) return 'text-green-600 dark:text-green-400'
-    if (status >= 300 && status < 400) return 'text-yellow-600 dark:text-yellow-400'
-    if (status >= 400 && status < 500) return 'text-red-600 dark:text-red-400'
-    if (status >= 500) return 'text-purple-600 dark:text-purple-400'
-    return 'text-gray-600 dark:text-gray-400'
-  }
-
   return (
-    <div class="card">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">🚀 API Tester</h2>
-      
+    <Card title="🚀 API Tester">
       {/* cURL Input Section */}
-      <div class="form-group">
+      <FormGroup>
         <div class="flex items-center justify-between mb-3">
-          <label class="form-label mb-0">
-            📋 Paste cURL Command or URL
-          </label>
-          <button onClick={loadExample} class="btn-secondary text-xs">
+          <FormLabel>📋 Paste cURL Command or URL</FormLabel>
+          <Button variant="secondary" onClick={loadExample} class="text-xs">
             📝 Load Example
-          </button>
+          </Button>
         </div>
-        <textarea
+        <TextArea
           value={curlInput()}
           onInput={handleCurlPaste}
           placeholder={`Paste your cURL command here and it will auto-fill all fields below:
@@ -318,16 +264,16 @@ curl -X POST "https://api.example.com/users" \\
 Or just paste a URL:
 https://api.example.com/users`}
           rows="4"
-          class="textarea-enhanced font-mono"
+          enhanced
         />
-        <div class="form-description">
+        <FormDescription>
           🎯 Supports cURL commands with -X, -H, -d flags. Auto-detects and fills URL, method, headers, and body.
-        </div>
-      </div>
+        </FormDescription>
+      </FormGroup>
 
       {/* URL and Method */}
-      <div class="form-group">
-        <label class="form-label">🌐 Request Details</label>
+      <FormGroup>
+        <FormLabel>🌐 Request Details</FormLabel>
         <div class="flex gap-3 mb-4">
           <select
             value={method()}
@@ -338,22 +284,20 @@ https://api.example.com/users`}
               <option key={m} value={m}>{m}</option>
             ))}
           </select>
-          <input
+          <InputField
             type="url"
             value={url()}
             onInput={(e) => setUrl(e.target.value)}
             placeholder="https://api.example.com/endpoint"
-            class="input-field flex-1"
+            class="flex-1"
           />
         </div>
-      </div>
+      </FormGroup>
 
       {/* Headers */}
-      <div class="form-group">
-        <label class="form-label">
-          📋 Headers (JSON format)
-        </label>
-        <textarea
+      <FormGroup>
+        <FormLabel>📋 Headers (JSON format)</FormLabel>
+        <TextArea
           value={headers()}
           onInput={(e) => setHeaders(e.target.value)}
           placeholder={`{
@@ -362,20 +306,18 @@ https://api.example.com/users`}
   "X-API-Key": "your-api-key"
 }`}
           rows="4"
-          class="textarea-enhanced font-mono"
+          enhanced
         />
-        <div class="form-description">
+        <FormDescription>
           💡 Headers will be auto-filled when you paste a cURL command above
-        </div>
-      </div>
+        </FormDescription>
+      </FormGroup>
 
       {/* Body */}
       {['POST', 'PUT', 'PATCH'].includes(method()) && (
-        <div class="form-group">
-          <label class="form-label">
-            📦 Request Body
-          </label>
-          <textarea
+        <FormGroup>
+          <FormLabel>📦 Request Body</FormLabel>
+          <TextArea
             value={body()}
             onInput={(e) => setBody(e.target.value)}
             placeholder={`{
@@ -384,37 +326,29 @@ https://api.example.com/users`}
   "age": 30
 }`}
             rows="6"
-            class="textarea-enhanced font-mono"
+            enhanced
           />
-          <div class="form-description">
+          <FormDescription>
             🔧 Request body will be auto-filled from cURL -d flag
-          </div>
-        </div>
+          </FormDescription>
+        </FormGroup>
       )}
 
       {/* Controls */}
-      <div class="btn-group">
-        <button
-          onClick={sendRequest}
-          disabled={loading()}
-          class="btn-primary"
-        >
-          {loading() ? '⏳ Sending...' : '🚀 Send Request'}
-        </button>
-        <button onClick={copyAsCurl} class="btn-secondary">
+      <ButtonGroup>
+        <Button onClick={sendRequest} disabled={isProcessing()}>
+          {isProcessing() ? '⏳ Sending...' : '🚀 Send Request'}
+        </Button>
+        <Button variant="secondary" onClick={copyAsCurl}>
           📋 Copy as cURL
-        </button>
-        <button onClick={clearAll} class="btn-secondary">
+        </Button>
+        <Button variant="secondary" onClick={clearAll}>
           🗑️ Clear All
-        </button>
-      </div>
+        </Button>
+      </ButtonGroup>
 
       {/* Error */}
-      {error() && (
-        <div class="error-container">
-          <p class="error-text">❌ {error()}</p>
-        </div>
-      )}
+      {error() && <ErrorContainer message={error()} />}
 
       {/* Response */}
       {response() && (
@@ -422,9 +356,7 @@ https://api.example.com/users`}
           {/* Status and Timing */}
           <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
             <div class="flex items-center space-x-6">
-              <span class={`font-bold text-xl ${getStatusColor(response().status)}`}>
-                {response().status} {response().statusText}
-              </span>
+              <StatusBadge status={response().status} statusText={response().statusText} />
               <span class="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                 ⏱️ {response().time}ms
               </span>
@@ -432,35 +364,33 @@ https://api.example.com/users`}
                 📊 {response().size} bytes
               </span>
             </div>
-            <button onClick={copyResponse} class="copy-btn">
-              📋 Copy Response
-            </button>
+            <CopyButton text={response().body} label="Copy Response" />
           </div>
 
           {/* Response Headers */}
           <div>
-            <h3 class="section-header">📋 Response Headers</h3>
-            <div class="result-container max-h-40 overflow-y-auto">
-              <pre class="code-display">
+            <SectionHeader>📋 Response Headers</SectionHeader>
+            <ResultContainer class="max-h-40 overflow-y-auto">
+              <CodeDisplay>
                 {Object.entries(response().headers).map(([key, value]) => 
                   `${key}: ${value}`
                 ).join('\n')}
-              </pre>
-            </div>
+              </CodeDisplay>
+            </ResultContainer>
           </div>
 
           {/* Response Body */}
           <div>
-            <h3 class="section-header">📄 Response Body</h3>
-            <div class="result-container max-h-80 overflow-y-auto">
-              <pre class="code-display whitespace-pre-wrap">
+            <SectionHeader>📄 Response Body</SectionHeader>
+            <ResultContainer class="max-h-80 overflow-y-auto">
+              <CodeDisplay class="whitespace-pre-wrap">
                 {response().body}
-              </pre>
-            </div>
+              </CodeDisplay>
+            </ResultContainer>
           </div>
         </div>
       )}
-    </div>
+    </Card>
   )
 }
 

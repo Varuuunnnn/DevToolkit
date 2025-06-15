@@ -1,20 +1,15 @@
-import { createSignal, createEffect } from 'solid-js'
+import { createSignal } from 'solid-js'
+import { 
+  Card, FormGroup, FormLabel, FormDescription, TextArea, ButtonGroup, Button, 
+  CharCount, ErrorContainer, SuccessContainer, CopyButton, FormRow, FormCol, InputField
+} from './shared/FormComponents'
+import { useCharacterCount, useProcessing } from './shared/hooks'
 
 function JsonFormatter() {
-  const [input, setInput] = createSignal('')
-  const [output, setOutput] = createSignal('')
-  const [error, setError] = createSignal('')
+  const [input, setInput, inputCharCount] = useCharacterCount('')
+  const [output, setOutput, outputCharCount] = useCharacterCount('')
   const [indentSize, setIndentSize] = createSignal(2)
-  const [inputCharCount, setInputCharCount] = createSignal(0)
-  const [outputCharCount, setOutputCharCount] = createSignal(0)
-
-  createEffect(() => {
-    setInputCharCount(input().length)
-  })
-
-  createEffect(() => {
-    setOutputCharCount(output().length)
-  })
+  const { error, setError } = useProcessing()
 
   const formatJson = () => {
     if (!input().trim()) {
@@ -66,23 +61,10 @@ function JsonFormatter() {
     }
   }
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(output())
-    } catch (err) {
-      console.error('Failed to copy:', err)
-    }
-  }
-
   const clearAll = () => {
     setInput('')
     setOutput('')
     setError('')
-  }
-
-  const autoResize = (textarea) => {
-    textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 400) + 'px'
   }
 
   const getSizeReduction = () => {
@@ -103,26 +85,13 @@ function JsonFormatter() {
   }
 
   return (
-    <div class="card">
-      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">📝 JSON Formatter & Validator</h2>
-      
+    <Card title="📝 JSON Formatter & Validator">
       {/* Input */}
-      <div class="form-group">
-        <label class="form-label">
-          📄 JSON Input
-        </label>
-        <textarea
-          ref={(el) => {
-            if (el) {
-              el.addEventListener('input', () => autoResize(el))
-              autoResize(el)
-            }
-          }}
+      <FormGroup>
+        <FormLabel>📄 JSON Input</FormLabel>
+        <TextArea
           value={input()}
-          onInput={(e) => {
-            setInput(e.target.value)
-            autoResize(e.target)
-          }}
+          onInput={(e) => setInput(e.target.value)}
           placeholder='Paste your JSON here...
 
 Example:
@@ -132,35 +101,26 @@ Example:
   "city": "New York",
   "hobbies": ["reading", "coding", "traveling"]
 }'
-          class="textarea-enhanced font-mono"
+          enhanced
+          autoResize
         />
-        <div class="char-count">
-          {inputCharCount().toLocaleString()} characters
-        </div>
-        <div class="form-description">
+        <CharCount count={inputCharCount()} />
+        <FormDescription>
           Paste any JSON data to format, minify, or validate it
-        </div>
-      </div>
+        </FormDescription>
+      </FormGroup>
 
       {/* Controls */}
-      <div class="form-row">
-        <div class="btn-group">
-          <button onClick={formatJson} class="btn-primary">
-            ✨ Format & Beautify
-          </button>
-          <button onClick={minifyJson} class="btn-secondary">
-            🗜️ Minify
-          </button>
-          <button onClick={validateJson} class="btn-secondary">
-            ✅ Validate Only
-          </button>
-          <button onClick={clearAll} class="btn-secondary">
-            🗑️ Clear All
-          </button>
-        </div>
+      <FormRow>
+        <ButtonGroup>
+          <Button onClick={formatJson}>✨ Format & Beautify</Button>
+          <Button variant="secondary" onClick={minifyJson}>🗜️ Minify</Button>
+          <Button variant="secondary" onClick={validateJson}>✅ Validate Only</Button>
+          <Button variant="secondary" onClick={clearAll}>🗑️ Clear All</Button>
+        </ButtonGroup>
         
-        <div class="form-col max-w-xs">
-          <label class="form-label mb-1">🔧 Indent Size</label>
+        <FormCol class="max-w-xs">
+          <FormLabel>🔧 Indent Size</FormLabel>
           <select
             value={indentSize()}
             onChange={(e) => setIndentSize(parseInt(e.target.value))}
@@ -170,56 +130,38 @@ Example:
             <option value="4">4 spaces</option>
             <option value="8">8 spaces</option>
           </select>
-        </div>
-      </div>
+        </FormCol>
+      </FormRow>
 
       {/* Error */}
-      {error() && (
-        <div class="error-container">
-          <p class="error-text">{error()}</p>
-        </div>
-      )}
+      {error() && <ErrorContainer message={error()} />}
 
       {/* Size comparison */}
-      {getSizeReduction() && (
-        <div class="success-container">
-          <p class="success-text">{getSizeReduction()}</p>
-        </div>
-      )}
+      {getSizeReduction() && <SuccessContainer message={getSizeReduction()} />}
 
       {/* Output */}
       {output() && (
-        <div class="form-group">
+        <FormGroup>
           <div class="flex items-center justify-between mb-3">
-            <label class="form-label mb-0">
-              📋 Formatted Output
-            </label>
-            <button onClick={copyToClipboard} class="copy-btn">
-              📋 Copy Result
-            </button>
+            <FormLabel>📋 Formatted Output</FormLabel>
+            <CopyButton text={output()} label="Copy Result" />
           </div>
-          <textarea
-            ref={(el) => {
-              if (el) {
-                autoResize(el)
-              }
-            }}
+          <TextArea
             value={output()}
             readonly
-            class="textarea-code bg-gray-50 dark:bg-gray-700"
+            class="bg-gray-50 dark:bg-gray-700"
+            autoResize
           />
-          <div class="char-count">
-            {outputCharCount().toLocaleString()} characters
-          </div>
-          <div class="form-description">
+          <CharCount count={outputCharCount()} />
+          <FormDescription>
             {output() === '✅ Valid JSON - No syntax errors found!' 
               ? 'JSON validation result'
               : 'Formatted JSON output - ready to copy and use'
             }
-          </div>
-        </div>
+          </FormDescription>
+        </FormGroup>
       )}
-    </div>
+    </Card>
   )
 }
 
