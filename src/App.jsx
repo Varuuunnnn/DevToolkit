@@ -7,9 +7,9 @@ import DiffChecker from './components/DiffChecker'
 import CaseConverter from './components/CaseConverter'
 import TimestampConverter from './components/TimestampConverter'
 import EpochConverter from './components/EpochConverter'
-import HttpStatusReference from './components/HttpStatusReference'
 import ApiTester from './components/ApiTester'
 import EventLoopVisualizer from './components/EventLoopVisualizer'
+import HttpStatusReference from './components/HttpStatusReference'
 
 function App() {
   const [activeTab, setActiveTab] = createSignal('gzip')
@@ -25,9 +25,9 @@ function App() {
     { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
     { id: 'timestamp', name: 'Timestamp', icon: '⏰', component: TimestampConverter },
     { id: 'epoch', name: 'Epoch Time', icon: '🕐', component: EpochConverter },
-    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference },
     { id: 'api', name: 'API Tester', icon: '🚀', component: ApiTester },
-    { id: 'eventloop', name: 'JavaScript Event Loop', icon: '⚡', component: EventLoopVisualizer }
+    { id: 'eventloop', name: 'JavaScript Event Loop', icon: '⚡', component: EventLoopVisualizer },
+    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference }
   ]
 
   // Split tools into two rows (6 tools in first row, 5 in second)
