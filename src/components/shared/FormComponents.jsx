@@ -7,6 +7,18 @@ export const FormGroup = (props) => (
   </div>
 )
 
+export const FormRow = (props) => (
+  <div class="form-row">
+    {props.children}
+  </div>
+)
+
+export const FormCol = (props) => (
+  <div class={`form-col ${props.class || ''}`}>
+    {props.children}
+  </div>
+)
+
 export const FormLabel = (props) => (
   <label class={`form-label ${props.class || ''}`}>
     {props.children}
@@ -92,13 +104,13 @@ export const SuccessContainer = (props) => (
 )
 
 export const ResultContainer = (props) => (
-  <div class="result-container">
+  <div class={`result-container ${props.class || ''}`}>
     {props.children}
   </div>
 )
 
 export const CodeDisplay = (props) => (
-  <pre class="code-display">
+  <pre class={`code-display ${props.class || ''}`}>
     {props.children}
   </pre>
 )
@@ -160,4 +172,37 @@ export const EmptyState = (props) => (
   <div class="text-center py-8 text-gray-500 dark:text-gray-400">
     <p>{props.message || 'No data available'}</p>
   </div>
+)
+
+export const Toggle = (props) => (
+  <div class="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+    {props.options.map((option) => (
+      <button
+        key={option.value}
+        onClick={() => props.onChange(option.value)}
+        class={`px-6 py-3 rounded-md font-medium transition-all duration-200 ${
+          props.value === option.value
+            ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm'
+            : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+        }`}
+      >
+        {option.label}
+      </button>
+    ))}
+  </div>
+)
+
+export const Select = (props) => (
+  <select
+    value={props.value}
+    onChange={props.onChange}
+    class={`input-field ${props.class || ''}`}
+    disabled={props.disabled}
+  >
+    {props.options.map((option) => (
+      <option key={option.value} value={option.value}>
+        {option.label}
+      </option>
+    ))}
+  </select>
 )
