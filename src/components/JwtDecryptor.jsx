@@ -1,5 +1,15 @@
 import { createSignal, createEffect } from 'solid-js'
-import { decodeJwt } from 'jose'
+
+function base64UrlDecode(str) {
+  const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=')
+  const binaryString = atob(padded)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+  return new TextDecoder().decode(bytes)
+}
 
 function JwtDecryptor() {
   const [jwtToken, setJwtToken] = createSignal('')
@@ -26,19 +36,16 @@ function JwtDecryptor() {
 
     try {
       const token = jwtToken().trim()
-      
-      // Basic JWT format validation
+
       const parts = token.split('.')
       if (parts.length !== 3) {
         throw new Error('Invalid JWT format. JWT should have 3 parts separated by dots.')
       }
 
-      // Decode header
-      const headerDecoded = JSON.parse(atob(parts[0].replace(/-/g, '+').replace(/_/g, '/')))
+      const headerDecoded = JSON.parse(base64UrlDecode(parts[0]))
       setDecodedHeader(headerDecoded)
 
-      // Decode payload using jose library
-      const payloadDecoded = decodeJwt(token)
+      const payloadDecoded = JSON.parse(base64UrlDecode(parts[1]))
       setDecodedPayload(payloadDecoded)
 
     } catch (err) {
@@ -108,7 +115,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4
           {tokenCharCount().toLocaleString()} characters
         </div>
         <div class="form-description">
-          Paste a complete JWT token to decode its header and payload sections
+          Paste a complete JWT token to decode its header and payload sections. All decoding happens locally in your browser — your token never leaves your device.
         </div>
       </div>
 
