@@ -19,14 +19,14 @@ function App() {
   const tools = [
     { id: 'gzip', name: 'Gzip Compress', icon: '🗜️', component: GzipCompressor },
     { id: 'jwt', name: 'JWT Decoder', icon: '🔐', component: JwtDecryptor },
-    { id: 'password', name: 'Password Gen', icon: '🔑', component: PasswordGenerator },
     { id: 'json', name: 'JSON Format', icon: '📝', component: JsonFormatter },
     { id: 'diff', name: 'Text Diff', icon: '🔍', component: DiffChecker },
-    { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
+    { id: 'color', name: 'Color Picker', icon: '🎨', component: ColorPicker },
     { id: 'timestamp', name: 'Timestamp', icon: '⏰', component: TimestampConverter },
     { id: 'epoch', name: 'Epoch Time', icon: '🕐', component: EpochConverter },
-    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference },
-    { id: 'color', name: 'Color Picker', icon: '🎨', component: ColorPicker }
+    { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
+    { id: 'password', name: 'Password Gen', icon: '🔑', component: PasswordGenerator },
+    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference }
   ]
 
   // Initialize dark mode from localStorage or system preference
