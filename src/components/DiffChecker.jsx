@@ -57,6 +57,21 @@ function DiffChecker() {
     setDiffResult(diff)
   }
 
+  const copyDiffToClipboard = async () => {
+    const text = diffResult().map((item) => {
+      if (item.type === 'equal') return `  ${item.line1}`
+      if (item.type === 'removed') return `- ${item.line1}`
+      if (item.type === 'added') return `+ ${item.line2}`
+      if (item.type === 'modified') return `- ${item.line1}\n+ ${item.line2}`
+      return ''
+    }).join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
   const clearAll = () => {
     setText1('')
     setText2('')
@@ -214,6 +229,11 @@ Changes will be highlighted when you run the comparison."
       {diffResult().length > 0 && (
         <div class="form-group">
           <h3 class="section-header">📊 Difference Analysis</h3>
+          <div class="flex justify-end mb-2">
+            <button onClick={copyDiffToClipboard} class="copy-btn text-xs">
+              📋 Copy Diff
+            </button>
+          </div>
           <div class="result-container max-h-96 overflow-y-auto">
             {diffResult().map((item, index) => (
               <div key={index} class={`flex text-sm font-mono mb-1 p-2 rounded ${
