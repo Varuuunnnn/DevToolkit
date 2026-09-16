@@ -8,6 +8,7 @@ import CaseConverter from './components/CaseConverter'
 import TimestampConverter from './components/TimestampConverter'
 import EpochConverter from './components/EpochConverter'
 import HttpStatusReference from './components/HttpStatusReference'
+import ColorPicker from './components/ColorPicker'
 
 function App() {
   const [activeTab, setActiveTab] = createSignal('gzip')
@@ -24,7 +25,8 @@ function App() {
     { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
     { id: 'timestamp', name: 'Timestamp', icon: '⏰', component: TimestampConverter },
     { id: 'epoch', name: 'Epoch Time', icon: '🕐', component: EpochConverter },
-    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference }
+    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference },
+    { id: 'color', name: 'Color Picker', icon: '🎨', component: ColorPicker }
   ]
 
   // Initialize dark mode from localStorage or system preference
