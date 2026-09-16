@@ -9,14 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "solid-js": "^1.8.22",
-    "pako": "^2.1.0"
+    "@supabase/supabase-js": "^2.116.0",
+    "pako": "^2.1.0",
+    "solid-js": "^1.8.22"
   },
   "devDependencies": {
-    "vite": "^5.4.2",
-    "vite-plugin-solid": "^2.10.2",
-    "tailwindcss": "^3.4.0",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.32"
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.4.0",
+    "vite": "^5.4.2",
+    "vite-plugin-solid": "^2.10.2"
   }
 }
