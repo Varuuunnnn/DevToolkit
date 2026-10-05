@@ -2,6 +2,32 @@ import { createSignal, onMount, onCleanup, For } from 'solid-js'
 
 const STORAGE_KEY = 'devtoolkit-sticky-notes'
 
+function formatDate(iso) {
+  const d = new Date(iso)
+  const now = new Date()
+  const isToday = d.toDateString() === now.toDateString()
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const isYesterday = d.toDateString() === yesterday.toDateString()
+
+  const time = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  if (isToday) return `Today, ${time}`
+  if (isYesterday) return `Yesterday, ${time}`
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + `, ${time}`
+}
+
+function formatFullDate(iso) {
+  const d = new Date(iso)
+  return d.toLocaleString([], {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
 const COLORS = [
   { name: 'yellow', bg: '#fef9c3', border: '#fde047', text: '#713f12' },
   { name: 'pink', bg: '#fce7f3', border: '#f9a8d4', text: '#831843' },
@@ -193,50 +219,69 @@ function StickyNotes() {
                 onMouseDown={(e) => onMouseDown(e, note)}
               >
                 <div
-                  class="flex items-center justify-between px-2 py-1"
+                  class="px-2 pt-1 pb-0"
                   style={{ 'border-bottom': `1px solid ${c.border}` }}
                 >
-                  <div class="relative">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1">
+                      <div class="relative">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setColorPickerFor(colorPickerFor() === note.id ? null : note.id)
+                          }}
+                          class="w-5 h-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
+                          style={{ 'background-color': c.border }}
+                          title="Change color"
+                        />
+                        {colorPickerFor() === note.id && (
+                          <div
+                            class="absolute top-7 left-0 z-30 flex gap-1 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600"
+                            onClick={(e) => e.stopPropagation()}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            <For each={COLORS}>
+                              {(col) => (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    updateColor(note.id, col.name)
+                                  }}
+                                  class="w-6 h-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-125"
+                                  style={{ 'background-color': col.border }}
+                                />
+                              )}
+                            </For>
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        class="cursor-help opacity-60 hover:opacity-100 transition-opacity"
+                        title={`Created: ${formatFullDate(note.created_at)}`}
+                        style={{ color: c.text }}
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </span>
+                    </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        setColorPickerFor(colorPickerFor() === note.id ? null : note.id)
+                        deleteNote(note.id)
                       }}
-                      class="w-5 h-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
-                      style={{ 'background-color': c.border }}
-                      title="Change color"
-                    />
-                    {colorPickerFor() === note.id && (
-                      <div
-                        class="absolute top-7 left-0 z-30 flex gap-1 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600"
-                        onClick={(e) => e.stopPropagation()}
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <For each={COLORS}>
-                          {(col) => (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                updateColor(note.id, col.name)
-                              }}
-                              class="w-6 h-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-125"
-                              style={{ 'background-color': col.border }}
-                            />
-                          )}
-                        </For>
-                      </div>
-                    )}
+                      class="text-gray-400 hover:text-red-500 transition-colors text-sm font-bold"
+                      title="Delete note"
+                    >
+                      ✕
+                    </button>
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteNote(note.id)
-                    }}
-                    class="text-gray-400 hover:text-red-500 transition-colors text-sm font-bold"
-                    title="Delete note"
+                  <div
+                    class="text-xs font-medium pb-1 truncate"
+                    style={{ color: c.text, opacity: 0.7 }}
                   >
-                    ✕
-                  </button>
+                    {formatDate(note.created_at)}
+                  </div>
                 </div>
 
                 <textarea
