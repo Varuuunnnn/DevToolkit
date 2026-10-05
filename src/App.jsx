@@ -27,8 +27,7 @@ function App() {
     { id: 'epoch', name: 'Epoch Time', icon: '🕐', component: EpochConverter },
     { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
     { id: 'password', name: 'Password Gen', icon: '🔑', component: PasswordGenerator },
-    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference },
-    { id: 'sticky', name: 'Sticky Notes', icon: '📝', component: StickyNotes }
+    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference }
   ]
 
   // Initialize dark mode from localStorage or system preference
@@ -74,12 +73,16 @@ function App() {
   // Get the active component
   const getActiveComponent = () => {
     const tool = tools.find(t => t.id === activeTab())
-    return tool ? tool.component : GzipCompressor
+    if (tool) return tool.component
+    if (activeTab() === 'sticky') return StickyNotes
+    return GzipCompressor
   }
 
   const getActiveToolName = () => {
     const tool = tools.find(t => t.id === activeTab())
-    return tool ? tool.name : ''
+    if (tool) return tool.name
+    if (activeTab() === 'sticky') return 'Sticky Notes'
+    return ''
   }
 
   return (
@@ -139,22 +142,22 @@ function App() {
               {/* Sticky Notes Quick Access */}
               <button
                 onClick={() => handleTabChange('sticky')}
-                class={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                class={`flex items-center space-x-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-300 hover:scale-105 ${
                   activeTab() === 'sticky'
                     ? isDarkMode()
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-blue-500 text-white'
+                      ? 'bg-blue-600 text-white shadow-lg'
+                      : 'bg-blue-500 text-white shadow-lg'
                     : isDarkMode()
                       ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
-                title="Sticky Notes"
                 aria-label="Open Sticky Notes"
               >
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h9l7-7V5a2 2 0 00-2-2z" />
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 21v-5a1 1 0 011-1h5" />
                 </svg>
+                <span class="hidden sm:inline">Sticky Notes</span>
               </button>
 
               {/* Dark Mode Toggle */}
@@ -220,7 +223,7 @@ function App() {
               isDarkMode() ? 'text-gray-400' : 'text-gray-500'
             }`}>
               <span class="text-sm font-medium">
-                {tools.find(t => t.id === activeTab())?.icon} {getActiveToolName()}
+                {activeTab() === 'sticky' ? '📝' : tools.find(t => t.id === activeTab())?.icon} {getActiveToolName()}
               </span>
             </div>
 
