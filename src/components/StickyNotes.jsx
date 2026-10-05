@@ -1,4 +1,4 @@
-import { createSignal, onMount, onCleanup } from 'solid-js'
+import { createSignal, onMount, onCleanup, For } from 'solid-js'
 
 const STORAGE_KEY = 'devtoolkit-sticky-notes'
 
@@ -35,20 +35,21 @@ function saveToStorage(notes) {
 
 function StickyNotes() {
   const [notes, setNotes] = createSignal([])
-  const [dragId, setDragId] = createSignal(null)
-  const [dragOffset, setDragOffset] = createSignal({ x: 0, y: 0 })
-  const [editingId, setEditingId] = createSignal(null)
-  const [showColorPicker, setShowColorPicker] = createSignal(null)
+  const [showClearConfirm, setShowClearConfirm] = createSignal(false)
+  const [colorPickerFor, setColorPickerFor] = createSignal(null)
+  let dragId = null
+  let dragOffsetX = 0
+  let dragOffsetY = 0
   let boardEl = null
+  let saveTimer = null
 
-  const persist = (next) => {
-    setNotes(next)
-    saveToStorage(next)
+  const debounceSave = () => {
+    if (saveTimer) clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => saveToStorage(notes()), 400)
   }
 
   onMount(() => {
-    const loaded = loadFromStorage()
-    setNotes(loaded)
+    setNotes(loadFromStorage())
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
     onCleanup(() => {
@@ -58,66 +59,64 @@ function StickyNotes() {
   })
 
   const addNote = () => {
+    const offset = notes().length % 6
     const newNote = {
       id: genId(),
       content: '',
-      x: 40 + (notes().length % 6) * 30,
-      y: 40 + (notes().length % 6) * 30,
+      x: 30 + offset * 30,
+      y: 30 + offset * 30,
       color: 'yellow',
       created_at: new Date().toISOString(),
     }
-    persist([...notes(), newNote])
-    setEditingId(newNote.id)
+    setNotes([...notes(), newNote])
+    debounceSave()
   }
 
   const deleteNote = (id) => {
-    persist(notes().filter((n) => n.id !== id))
+    setNotes(notes().filter((n) => n.id !== id))
+    debounceSave()
   }
 
-  const updateContent = (id, content) => {
-    persist(notes().map((n) => (n.id === id ? { ...n, content } : n)))
+  const clearAll = () => {
+    setNotes([])
+    saveToStorage([])
+    setShowClearConfirm(false)
   }
 
   const updateColor = (id, color) => {
-    persist(notes().map((n) => (n.id === id ? { ...n, color } : n)))
-    setShowColorPicker(null)
-  }
-
-  const updatePosition = (id, x, y) => {
-    persist(notes().map((n) => (n.id === id ? { ...n, x, y } : n)))
+    setNotes(notes().map((n) => (n.id === id ? { ...n, color } : n)))
+    debounceSave()
+    setColorPickerFor(null)
   }
 
   const onMouseDown = (e, note) => {
-    if (editingId() === note.id) return
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return
     e.preventDefault()
-    setDragId(note.id)
+    dragId = note.id
     const rect = boardEl.getBoundingClientRect()
-    setDragOffset({
-      x: e.clientX - rect.left - note.x,
-      y: e.clientY - rect.top - note.y,
-    })
+    dragOffsetX = e.clientX - rect.left - note.x + boardEl.scrollLeft
+    dragOffsetY = e.clientY - rect.top - note.y + boardEl.scrollTop
   }
 
   const onMouseMove = (e) => {
-    if (!dragId()) return
+    if (!dragId) return
     const rect = boardEl.getBoundingClientRect()
-    const x = Math.max(0, e.clientX - rect.left - dragOffset().x)
-    const y = Math.max(0, e.clientY - rect.top - dragOffset().y)
-    setNotes(notes().map((n) => (n.id === dragId() ? { ...n, x, y } : n)))
+    const x = Math.max(0, e.clientX - rect.left - dragOffsetX + boardEl.scrollLeft)
+    const y = Math.max(0, e.clientY - rect.top - dragOffsetY + boardEl.scrollTop)
+    setNotes(notes().map((n) => (n.id === dragId ? { ...n, x, y } : n)))
   }
 
   const onMouseUp = () => {
-    if (!dragId()) return
-    const note = notes().find((n) => n.id === dragId())
-    if (note) updatePosition(note.id, note.x, note.y)
-    setDragId(null)
+    if (!dragId) return
+    dragId = null
+    debounceSave()
   }
 
   const getColor = (name) => COLORS.find((c) => c.name === name) || COLORS[0]
 
   return (
     <div class="w-full">
-      <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
             Sticky Notes
@@ -126,14 +125,46 @@ function StickyNotes() {
             Drag notes anywhere on the board. Click to write, click the color dot to change color.
           </p>
         </div>
-        <button onClick={addNote} class="btn-primary text-sm whitespace-nowrap">
-          + Add Note
-        </button>
+        <div class="flex items-center gap-2">
+          {notes().length > 0 && (
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              class="bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50 text-red-700 dark:text-red-300 font-medium py-3 px-5 rounded-lg transition-all duration-200 text-sm transform hover:scale-105 active:scale-95"
+            >
+              Clear All
+            </button>
+          )}
+          <button onClick={addNote} class="btn-primary text-sm whitespace-nowrap">
+            + Add Note
+          </button>
+        </div>
       </div>
+
+      {showClearConfirm() && (
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Clear all sticky notes?</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              This will permanently delete all your sticky notes. This action cannot be undone.
+            </p>
+            <div class="flex gap-3 justify-end">
+              <button onClick={() => setShowClearConfirm(false)} class="btn-secondary text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={clearAll}
+                class="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 text-sm transform hover:scale-105 active:scale-95 shadow-lg"
+              >
+                Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         ref={(el) => (boardEl = el)}
-        class="relative w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-hidden"
+        class="relative w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 overflow-auto"
         style={{ 'min-height': '600px' }}
       >
         {notes().length === 0 && (
@@ -145,81 +176,85 @@ function StickyNotes() {
           </div>
         )}
 
-        {notes().map((note) => {
-          const c = getColor(note.color)
-          return (
-            <div
-              class="absolute select-none rounded-lg shadow-lg transition-shadow hover:shadow-xl"
-              style={{
-                'background-color': c.bg,
-                border: `2px solid ${c.border}`,
-                left: `${note.x}px`,
-                top: `${note.y}px`,
-                width: '220px',
-                'min-height': '200px',
-                cursor: dragId() === note.id ? 'grabbing' : 'grab',
-              }}
-              onMouseDown={(e) => onMouseDown(e, note)}
-            >
-              {/* Note header */}
+        <For each={notes()}>
+          {(note) => {
+            const c = getColor(note.color)
+            return (
               <div
-                class="flex items-center justify-between px-2 py-1 cursor-move"
-                style={{ 'border-bottom': `1px solid ${c.border}` }}
+                class="absolute select-none rounded-lg shadow-lg hover:shadow-xl"
+                style={{
+                  'background-color': c.bg,
+                  border: `2px solid ${c.border}`,
+                  left: `${note.x}px`,
+                  top: `${note.y}px`,
+                  width: '220px',
+                  'min-height': '200px',
+                }}
+                onMouseDown={(e) => onMouseDown(e, note)}
               >
-                <div class="relative">
+                <div
+                  class="flex items-center justify-between px-2 py-1"
+                  style={{ 'border-bottom': `1px solid ${c.border}` }}
+                >
+                  <div class="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setColorPickerFor(colorPickerFor() === note.id ? null : note.id)
+                      }}
+                      class="w-5 h-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
+                      style={{ 'background-color': c.border }}
+                      title="Change color"
+                    />
+                    {colorPickerFor() === note.id && (
+                      <div
+                        class="absolute top-7 left-0 z-30 flex gap-1 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600"
+                        onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <For each={COLORS}>
+                          {(col) => (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateColor(note.id, col.name)
+                              }}
+                              class="w-6 h-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-125"
+                              style={{ 'background-color': col.border }}
+                            />
+                          )}
+                        </For>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
-                      setShowColorPicker(showColorPicker() === note.id ? null : note.id)
+                      deleteNote(note.id)
                     }}
-                    class="w-5 h-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
-                    style={{ 'background-color': c.border }}
-                    title="Change color"
-                  />
-                  {showColorPicker() === note.id && (
-                    <div class="absolute top-7 left-0 z-20 flex gap-1 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600">
-                      {COLORS.map((col) => (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            updateColor(note.id, col.name)
-                          }}
-                          class="w-6 h-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-125"
-                          style={{ 'background-color': col.border }}
-                        />
-                      ))}
-                    </div>
-                  )}
+                    class="text-gray-400 hover:text-red-500 transition-colors text-sm font-bold"
+                    title="Delete note"
+                  >
+                    ✕
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteNote(note.id)
-                  }}
-                  class="text-gray-400 hover:text-red-500 transition-colors text-sm font-bold"
-                  title="Delete note"
-                >
-                  ✕
-                </button>
-              </div>
 
-              {/* Note content */}
-              <textarea
-                value={note.content}
-                onFocus={() => setEditingId(note.id)}
-                onBlur={() => setEditingId(null)}
-                onInput={(e) => {
-                  const val = e.target.value
-                  updateContent(note.id, val)
-                }}
-                onMouseDown={(e) => e.stopPropagation()}
-                placeholder="Write something..."
-                class="w-full bg-transparent border-none outline-none resize-none p-3 text-sm leading-relaxed"
-                style={{ color: c.text, 'min-height': '160px' }}
-              />
-            </div>
-          )
-        })}
+                <textarea
+                  value={note.content}
+                  onInput={(e) => {
+                    const val = e.currentTarget.value
+                    setNotes((prev) => prev.map((n) => (n.id === note.id ? { ...n, content: val } : n)))
+                    debounceSave()
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  placeholder="Write something..."
+                  class="w-full bg-transparent border-none outline-none resize-none p-3 text-sm leading-relaxed"
+                  style={{ color: c.text, 'min-height': '160px' }}
+                />
+              </div>
+            )
+          }}
+        </For>
       </div>
     </div>
   )
