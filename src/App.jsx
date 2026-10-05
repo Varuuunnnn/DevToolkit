@@ -12,13 +12,12 @@ import ColorPicker from './components/ColorPicker'
 import StickyNotes from './components/StickyNotes'
 
 function App() {
-  const [activeTab, setActiveTab] = createSignal('sticky')
+  const [activeTab, setActiveTab] = createSignal('gzip')
   const [isDarkMode, setIsDarkMode] = createSignal(false)
   const [isTransitioning, setIsTransitioning] = createSignal(false)
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
 
   const tools = [
-    { id: 'sticky', name: 'Sticky Notes', icon: '📝', component: StickyNotes },
     { id: 'gzip', name: 'Gzip Compress', icon: '🗜️', component: GzipCompressor },
     { id: 'jwt', name: 'JWT Decoder', icon: '🔐', component: JwtDecryptor },
     { id: 'json', name: 'JSON Format', icon: '📋', component: JsonFormatter },
@@ -28,7 +27,8 @@ function App() {
     { id: 'epoch', name: 'Epoch Time', icon: '🕐', component: EpochConverter },
     { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
     { id: 'password', name: 'Password Gen', icon: '🔑', component: PasswordGenerator },
-    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference }
+    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference },
+    { id: 'sticky', name: 'Sticky Notes', icon: '📝', component: StickyNotes }
   ]
 
   // Initialize dark mode from localStorage or system preference
@@ -134,17 +134,41 @@ function App() {
               </div>
             </div>
 
-            {/* Dark Mode Toggle */}
-            <button
-              onClick={toggleDarkMode}
-              class={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
-                isDarkMode()
-                  ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {isDarkMode() ? '☀️' : '🌙'}
-            </button>
+            {/* Quick access buttons */}
+            <div class="flex items-center space-x-2">
+              {/* Sticky Notes Quick Access */}
+              <button
+                onClick={() => handleTabChange('sticky')}
+                class={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                  activeTab() === 'sticky'
+                    ? isDarkMode()
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-500 text-white'
+                    : isDarkMode()
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title="Sticky Notes"
+                aria-label="Open Sticky Notes"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 3H5a2 2 0 00-2 2v14a2 2 0 002 2h9l7-7V5a2 2 0 00-2-2z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 21v-5a1 1 0 011-1h5" />
+                </svg>
+              </button>
+
+              {/* Dark Mode Toggle */}
+              <button
+                onClick={toggleDarkMode}
+                class={`p-2 rounded-lg transition-all duration-300 hover:scale-110 ${
+                  isDarkMode()
+                    ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {isDarkMode() ? '☀️' : '🌙'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
