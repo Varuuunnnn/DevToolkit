@@ -12,23 +12,23 @@ import ColorPicker from './components/ColorPicker'
 import StickyNotes from './components/StickyNotes'
 
 function App() {
-  const [activeTab, setActiveTab] = createSignal('gzip')
+  const [activeTab, setActiveTab] = createSignal('sticky')
   const [isDarkMode, setIsDarkMode] = createSignal(false)
   const [isTransitioning, setIsTransitioning] = createSignal(false)
   const [isSidebarOpen, setIsSidebarOpen] = createSignal(true)
 
   const tools = [
+    { id: 'sticky', name: 'Sticky Notes', icon: '📝', component: StickyNotes },
     { id: 'gzip', name: 'Gzip Compress', icon: '🗜️', component: GzipCompressor },
     { id: 'jwt', name: 'JWT Decoder', icon: '🔐', component: JwtDecryptor },
-    { id: 'json', name: 'JSON Format', icon: '📝', component: JsonFormatter },
+    { id: 'json', name: 'JSON Format', icon: '📋', component: JsonFormatter },
     { id: 'diff', name: 'Text Diff', icon: '🔍', component: DiffChecker },
     { id: 'color', name: 'Color Picker', icon: '🎨', component: ColorPicker },
     { id: 'timestamp', name: 'Timestamp', icon: '⏰', component: TimestampConverter },
     { id: 'epoch', name: 'Epoch Time', icon: '🕐', component: EpochConverter },
     { id: 'case', name: 'Case Convert', icon: '🔤', component: CaseConverter },
     { id: 'password', name: 'Password Gen', icon: '🔑', component: PasswordGenerator },
-    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference },
-    { id: 'sticky', name: 'Sticky Notes', icon: '📝', component: StickyNotes }
+    { id: 'http', name: 'HTTP Status', icon: '📡', component: HttpStatusReference }
   ]
 
   // Initialize dark mode from localStorage or system preference
