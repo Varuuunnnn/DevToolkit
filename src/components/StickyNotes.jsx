@@ -89,6 +89,7 @@ function StickyNotes() {
     const newNote = {
       id: genId(),
       content: '',
+      title: '',
       x: 30 + offset * 30,
       y: 30 + offset * 30,
       color: 'yellow',
@@ -116,7 +117,7 @@ function StickyNotes() {
   }
 
   const onMouseDown = (e, note) => {
-    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON') return
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return
     e.preventDefault()
     dragId = note.id
     const rect = boardEl.getBoundingClientRect()
@@ -223,47 +224,36 @@ function StickyNotes() {
                   style={{ 'border-bottom': `1px solid ${c.border}` }}
                 >
                   <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-1">
-                      <div class="relative">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setColorPickerFor(colorPickerFor() === note.id ? null : note.id)
-                          }}
-                          class="w-5 h-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
-                          style={{ 'background-color': c.border }}
-                          title="Change color"
-                        />
-                        {colorPickerFor() === note.id && (
-                          <div
-                            class="absolute top-7 left-0 z-30 flex gap-1 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600"
-                            onClick={(e) => e.stopPropagation()}
-                            onMouseDown={(e) => e.stopPropagation()}
-                          >
-                            <For each={COLORS}>
-                              {(col) => (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    updateColor(note.id, col.name)
-                                  }}
-                                  class="w-6 h-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-125"
-                                  style={{ 'background-color': col.border }}
-                                />
-                              )}
-                            </For>
-                          </div>
-                        )}
-                      </div>
-                      <span
-                        class="cursor-help opacity-60 hover:opacity-100 transition-opacity"
-                        title={`Created: ${formatFullDate(note.created_at)}`}
-                        style={{ color: c.text }}
-                      >
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                      </span>
+                    <div class="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setColorPickerFor(colorPickerFor() === note.id ? null : note.id)
+                        }}
+                        class="w-5 h-5 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-110"
+                        style={{ 'background-color': c.border }}
+                        title="Change color"
+                      />
+                      {colorPickerFor() === note.id && (
+                        <div
+                          class="absolute top-7 left-0 z-30 flex gap-1 p-2 bg-white dark:bg-gray-700 rounded-lg shadow-xl border border-gray-200 dark:border-gray-600"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          <For each={COLORS}>
+                            {(col) => (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  updateColor(note.id, col.name)
+                                }}
+                                class="w-6 h-6 rounded-full border-2 border-white shadow-sm transition-transform hover:scale-125"
+                                style={{ 'background-color': col.border }}
+                              />
+                            )}
+                          </For>
+                        </div>
+                      )}
                     </div>
                     <button
                       onClick={(e) => {
@@ -276,9 +266,23 @@ function StickyNotes() {
                       ✕
                     </button>
                   </div>
+                  <input
+                    type="text"
+                    value={note.title || ''}
+                    onInput={(e) => {
+                      note.title = e.currentTarget.value
+                      setNotes([...notes()])
+                      debounceSave()
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    placeholder="Title..."
+                    class="w-full bg-transparent border-none outline-none text-xs font-semibold pb-1 placeholder:opacity-50"
+                    style={{ color: c.text }}
+                  />
                   <div
                     class="text-xs font-medium pb-1 truncate"
                     style={{ color: c.text, opacity: 0.7 }}
+                    title={`Created: ${formatFullDate(note.created_at)}`}
                   >
                     {formatDate(note.created_at)}
                   </div>
