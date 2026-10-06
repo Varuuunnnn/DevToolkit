@@ -63,6 +63,8 @@ function StickyNotes() {
   const [notes, setNotes] = createSignal([])
   const [showClearConfirm, setShowClearConfirm] = createSignal(false)
   const [colorPickerFor, setColorPickerFor] = createSignal(null)
+  const [editingTitleFor, setEditingTitleFor] = createSignal(null)
+  let titleInputs = {}
   let dragId = null
   let dragOffsetX = 0
   let dragOffsetY = 0
@@ -118,6 +120,7 @@ function StickyNotes() {
 
   const onMouseDown = (e, note) => {
     if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return
+    if (editingTitleFor() === note.id) return
     e.preventDefault()
     dragId = note.id
     const rect = boardEl.getBoundingClientRect()
@@ -137,6 +140,16 @@ function StickyNotes() {
     if (!dragId) return
     dragId = null
     debounceSave()
+  }
+
+  const focusTitleInput = (id) => {
+    setTimeout(() => {
+      const el = titleInputs[id]
+      if (el) {
+        el.focus()
+        el.select()
+      }
+    }, 0)
   }
 
   const getColor = (name) => COLORS.find((c) => c.name === name) || COLORS[0]
@@ -255,19 +268,37 @@ function StickyNotes() {
                         </div>
                       )}
                     </div>
-                    <input
-                      type="text"
-                      value={note.title || ''}
-                      onInput={(e) => {
-                        note.title = e.currentTarget.value
-                        setNotes([...notes()])
-                        debounceSave()
-                      }}
-                      onMouseDown={(e) => e.stopPropagation()}
-                      placeholder="Title..."
-                      class="flex-1 min-w-0 bg-transparent border-none outline-none text-xs font-semibold placeholder:opacity-50"
-                      style={{ color: c.text }}
-                    />
+                    {editingTitleFor() === note.id ? (
+                      <input
+                        ref={(el) => (titleInputs[note.id] = el)}
+                        type="text"
+                        value={note.title || ''}
+                        onInput={(e) => {
+                          note.title = e.currentTarget.value
+                          setNotes([...notes()])
+                          debounceSave()
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onBlur={() => setEditingTitleFor(null)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') setEditingTitleFor(null)
+                        }}
+                        placeholder="Title..."
+                        class="flex-1 min-w-0 bg-transparent border-none outline-none text-xs font-semibold placeholder:opacity-50"
+                        style={{ color: c.text }}
+                      />
+                    ) : (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditingTitleFor(note.id)
+                        }}
+                        class="flex-1 min-w-0 text-xs font-semibold truncate cursor-text"
+                        style={{ color: c.text, opacity: note.title ? 1 : 0.5 }}
+                      >
+                        {note.title || 'Title...'}
+                      </div>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
