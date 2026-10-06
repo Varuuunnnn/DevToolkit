@@ -223,8 +223,8 @@ function StickyNotes() {
                   class="px-2 pt-1 pb-0"
                   style={{ 'border-bottom': `1px solid ${c.border}` }}
                 >
-                  <div class="flex items-center justify-between">
-                    <div class="relative">
+                  <div class="flex items-center gap-1.5">
+                    <div class="relative shrink-0">
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
@@ -255,32 +255,32 @@ function StickyNotes() {
                         </div>
                       )}
                     </div>
+                    <input
+                      type="text"
+                      value={note.title || ''}
+                      onInput={(e) => {
+                        note.title = e.currentTarget.value
+                        setNotes([...notes()])
+                        debounceSave()
+                      }}
+                      onMouseDown={(e) => e.stopPropagation()}
+                      placeholder="Title..."
+                      class="flex-1 min-w-0 bg-transparent border-none outline-none text-xs font-semibold placeholder:opacity-50"
+                      style={{ color: c.text }}
+                    />
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         deleteNote(note.id)
                       }}
-                      class="text-gray-400 hover:text-red-500 transition-colors text-sm font-bold"
+                      class="text-gray-400 hover:text-red-500 transition-colors text-sm font-bold shrink-0"
                       title="Delete note"
                     >
                       ✕
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    value={note.title || ''}
-                    onInput={(e) => {
-                      note.title = e.currentTarget.value
-                      setNotes([...notes()])
-                      debounceSave()
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                    placeholder="Title..."
-                    class="w-full bg-transparent border-none outline-none text-xs font-semibold pb-1 placeholder:opacity-50"
-                    style={{ color: c.text }}
-                  />
                   <div
-                    class="text-xs font-medium pb-1 truncate"
+                    class="text-xs font-medium pb-1 pt-0.5 truncate"
                     style={{ color: c.text, opacity: 0.7 }}
                     title={`Created: ${formatFullDate(note.created_at)}`}
                   >
