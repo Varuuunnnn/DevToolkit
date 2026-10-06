@@ -287,8 +287,8 @@ function StickyNotes() {
                 <textarea
                   value={note.content}
                   onInput={(e) => {
-                    const val = e.currentTarget.value
-                    setNotes((prev) => prev.map((n) => (n.id === note.id ? { ...n, content: val } : n)))
+                    note.content = e.currentTarget.value
+                    setNotes([...notes()])
                     debounceSave()
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
