@@ -121,6 +121,27 @@ async function fetchArchivedNotesByDate(dateStr) {
   }
 }
 
+function seedTestData() {
+  const now = Date.now()
+  const dayMs = 24 * 60 * 60 * 1000
+  const seeds = [
+    { title: 'Today Note', content: 'This is a test note created today. It should appear on the board.', color: 'yellow', daysAgo: 0 },
+    { title: 'Yesterday Note', content: 'Test note from yesterday — should still be active on the board.', color: 'pink', daysAgo: 1 },
+    { title: 'Two Days Ago', content: 'Test note from two days ago — still within the 5-day window.', color: 'blue', daysAgo: 2 },
+    { title: 'Three Days Ago', content: 'Test note from three days ago — still within the 5-day window.', color: 'green', daysAgo: 3 },
+    { title: 'Four Days Ago', content: 'Test note from four days ago — last day before archiving kicks in.', color: 'orange', daysAgo: 4 },
+  ]
+  return seeds.map((s, i) => ({
+    id: genId(),
+    content: s.content,
+    title: s.title,
+    x: 30 + i * 30,
+    y: 30 + i * 40,
+    color: s.color,
+    created_at: new Date(now - s.daysAgo * dayMs).toISOString(),
+  }))
+}
+
 function StickyNotes() {
   const [notes, setNotes] = createSignal([])
   const [showClearConfirm, setShowClearConfirm] = createSignal(false)
@@ -156,7 +177,11 @@ function StickyNotes() {
   }
 
   onMount(() => {
-    const loaded = loadFromStorage()
+    let loaded = loadFromStorage()
+    if (loaded.length === 0) {
+      loaded = seedTestData()
+      saveToStorage(loaded)
+    }
     const oldNotes = loaded.filter((n) => isOlderThanDays(n.created_at, ARCHIVE_DAYS))
     const freshNotes = loaded.filter((n) => !isOlderThanDays(n.created_at, ARCHIVE_DAYS))
     if (oldNotes.length > 0) {
