@@ -286,10 +286,13 @@ function StickyNotes() {
     }
   }
 
-  const maxCalendarDate = () => {
-    const d = new Date()
-    d.setDate(d.getDate() - ARCHIVE_DAYS)
-    return toDateString(d.toISOString())
+  const isDateArchived = (dateStr) => {
+    if (!dateStr) return false
+    const d = new Date(dateStr + 'T00:00:00')
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - ARCHIVE_DAYS)
+    cutoff.setHours(0, 0, 0, 0)
+    return d < cutoff
   }
 
   const renderNote = (note, isArchived) => {
@@ -460,18 +463,20 @@ function StickyNotes() {
           <div class="flex items-center gap-2">
             <input
               type="date"
-              max={maxCalendarDate()}
               value={calendarDate()}
               onInput={(e) => setCalendarDate(e.currentTarget.value)}
               class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               onClick={viewArchived}
-              disabled={!calendarDate()}
+              disabled={!calendarDate() || !isDateArchived(calendarDate())}
               class="btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Fetch
             </button>
+            <Show when={calendarDate() && !isDateArchived(calendarDate())}>
+              <span class="text-xs text-gray-400 dark:text-gray-500">Only dates 6+ days ago have archived notes.</span>
+            </Show>
           </div>
         </Show>
       </div>
