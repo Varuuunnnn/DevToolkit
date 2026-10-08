@@ -2,6 +2,7 @@ import { createSignal, onMount, onCleanup, For, Show } from 'solid-js'
 import { supabase } from '../lib/supabase'
 
 const STORAGE_KEY = 'devtoolkit-sticky-notes'
+const SEED_VERSION_KEY = 'devtoolkit-sticky-notes-seed-v'
 const ARCHIVE_DAYS = 5
 
 function formatDate(iso) {
@@ -177,10 +178,13 @@ function StickyNotes() {
   }
 
   onMount(() => {
+    const todayKey = new Date().toISOString().split('T')[0]
+    const seededVersion = localStorage.getItem(SEED_VERSION_KEY)
     let loaded = loadFromStorage()
-    if (loaded.length === 0) {
+    if (loaded.length === 0 || seededVersion !== todayKey) {
       loaded = seedTestData()
       saveToStorage(loaded)
+      localStorage.setItem(SEED_VERSION_KEY, todayKey)
     }
     const oldNotes = loaded.filter((n) => isOlderThanDays(n.created_at, ARCHIVE_DAYS))
     const freshNotes = loaded.filter((n) => !isOlderThanDays(n.created_at, ARCHIVE_DAYS))
